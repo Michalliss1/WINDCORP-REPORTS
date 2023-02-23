@@ -1,5 +1,4 @@
 MNMAP:
- nmap -sC -sV 10.10.35.251
 
 Starting Nmap 7.60 ( https://nmap.org ) at 2022-10-29 01:59 BST
 Nmap scan report for windcorp.thm (10.10.35.251)
